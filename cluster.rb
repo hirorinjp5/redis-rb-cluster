@@ -21,7 +21,8 @@
 
 require 'rubygems'
 require 'redis'
-require './crc16'
+require 'thread'
+require_relative 'crc16'
 
 class RedisCluster
 
@@ -35,6 +36,7 @@ class RedisCluster
         @connections = {}
         @opt = opt
         @refresh_table_asap = false
+        @semaphore = Mutex.new
         initialize_slots_cache
     end
 
@@ -272,7 +274,7 @@ class RedisCluster
     # additional checks (example: RPOPLPUSH with same src/dst key, SORT
     # without GET or BY, and so forth).
     def method_missing(*argv)
-        send_cluster_command(argv)
+      @semaphore.synchronize { send_cluster_command(argv) }
     end
 end
 
